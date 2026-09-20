@@ -83,7 +83,7 @@ def main() -> int:
                 continue
             processed += 1
             logger.info("=" * 40)
-            logger.info("进度 [%d/%d] 处理好友: %s", processed, total_friends, friend.name)
+            logger.info("第 %d/%d 个好友: %s", processed, total_friends, friend.name)
             # 好友之间随机等待 10-20 秒，避免同时发送触发风控
             if processed > 1:
                 wait = random.uniform(10, 20)
@@ -93,15 +93,15 @@ def main() -> int:
                 ok = client.send_to_friend(friend, dry_run=config.dry_run)
                 if ok:
                     success_count += 1
-                    logger.info("进度 [%d/%d] 好友「%s」发送成功", processed, total_friends, friend.name)
+                    logger.info("第 %d/%d 个好友「%s」发送成功", processed, total_friends, friend.name)
                 else:
                     fail_count += 1
-                    logger.error("进度 [%d/%d] 好友「%s」发送失败", processed, total_friends, friend.name)
+                    logger.error("第 %d/%d 个好友「%s」发送失败", processed, total_friends, friend.name)
             except Exception as e:  # noqa: BLE001
                 fail_count += 1
                 err = f"{type(e).__name__}: {e}"
                 error_detail += f"\n- {friend.name}: {err}"
-                logger.exception("进度 [%d/%d] 处理好友 %s 时发生异常", processed, total_friends, friend.name)
+                logger.exception("第 %d/%d 个好友 %s 处理时发生异常", processed, total_friends, friend.name)
                 client._screenshot(f"error_{friend.name}")  # noqa: SLF001
     except Exception as e:  # noqa: BLE001
         logger.exception("运行过程中发生未捕获异常")

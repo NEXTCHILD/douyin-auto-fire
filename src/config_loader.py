@@ -41,20 +41,24 @@ class AppConfig:
 
         优先级：
           1) DOUYIN_FRIENDS_CONFIG（多好友 JSON 环境变量）
-          2) DOUYIN_FRIEND_NAME（旧的单个好友环境变量）+ friends.json
+          2) DOUYIN_FRIEND_NAME（支持英文逗号分隔多个，如 "好友A,好友B,好友C"）
+             所有名字共用 DOUYIN_MESSAGE / DOUYIN_VIDEO_URL
           3) config/friends.json（本地/GUI 使用）
         """
         if self.env_friends:
             return list(self.env_friends)
-        if self.friend_name:
-            primary = FriendConfig(
-                name=self.friend_name,
+        # DOUYIN_FRIEND_NAME 按英文逗号分割，去除每个名字前后空格，过滤空名
+        names = [n.strip() for n in self.friend_name.split(",") if n.strip()]
+        primary = [
+            FriendConfig(
+                name=n,
                 message=self.message,
                 video_url=self.video_url,
                 video_path=self.video_path,
             )
-            return [primary] + self.extra_friends
-        return list(self.extra_friends)
+            for n in names
+        ]
+        return primary + self.extra_friends
 
 
 @dataclass
