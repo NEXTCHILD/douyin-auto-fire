@@ -76,25 +76,32 @@ def main() -> int:
             )
             return 3
 
+        total_friends = len(friends)
+        processed = 0  # 实际已处理（非空昵称）的好友序号
         for idx, friend in enumerate(friends):
             if not friend.name:
                 continue
-            # 好友之间随机等待 5-15 秒，避免同时发送触发风控
-            if idx > 0:
-                wait = random.uniform(5, 15)
-                logger.info("好友间隔等待 %.1f 秒...", wait)
+            processed += 1
+            logger.info("=" * 40)
+            logger.info("进度 [%d/%d] 处理好友: %s", processed, total_friends, friend.name)
+            # 好友之间随机等待 10-20 秒，避免同时发送触发风控
+            if processed > 1:
+                wait = random.uniform(10, 20)
+                logger.info("好友间隔随机等待 %.1f 秒...", wait)
                 time.sleep(wait)
             try:
                 ok = client.send_to_friend(friend, dry_run=config.dry_run)
                 if ok:
                     success_count += 1
+                    logger.info("进度 [%d/%d] 好友「%s」发送成功", processed, total_friends, friend.name)
                 else:
                     fail_count += 1
+                    logger.error("进度 [%d/%d] 好友「%s」发送失败", processed, total_friends, friend.name)
             except Exception as e:  # noqa: BLE001
                 fail_count += 1
                 err = f"{type(e).__name__}: {e}"
                 error_detail += f"\n- {friend.name}: {err}"
-                logger.exception("处理好友 %s 时发生异常", friend.name)
+                logger.exception("进度 [%d/%d] 处理好友 %s 时发生异常", processed, total_friends, friend.name)
                 client._screenshot(f"error_{friend.name}")  # noqa: SLF001
     except Exception as e:  # noqa: BLE001
         logger.exception("运行过程中发生未捕获异常")
