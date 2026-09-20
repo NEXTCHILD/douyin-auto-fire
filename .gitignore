@@ -1,0 +1,30 @@
+# 登录态 / Cookie（敏感，绝不能提交）
+storage_state.json
+cookie.json
+cookies.json
+
+# 运行产物
+logs/
+screenshots/
+
+# 实际配置（示例文件 friends.example.json 可提交）
+config/friends.json
+
+# 环境变量
+.env
+.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+.pytest_cache/
+_vendor/
+
+# IDE / 系统
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

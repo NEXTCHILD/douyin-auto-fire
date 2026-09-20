@@ -1,0 +1,84 @@
+name: douyin-daily
+
+on:
+  schedule:
+    # 北京时间每天 07:00 = UTC 23:00（GitHub Actions 用 UTC）
+    - cron: '0 23 * * *'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Dry Run（只定位不发送）'
+        required: false
+        default: 'true'
+        type: choice
+        options:
+          - 'true'
+          - 'false'
+
+env:
+  TZ: Asia/Shanghai
+  HEADLESS: 'true'
+
+jobs:
+  douyin-daily:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Install Playwright Chromium
+        run: playwright install chromium --with-deps
+
+      - name: Decode storage state
+        env:
+          DOUYIN_STORAGE_STATE_B64: ${{ secrets.DOUYIN_STORAGE_STATE_B64 }}
+        run: |
+          if [ -z "$DOUYIN_STORAGE_STATE_B64" ]; then
+            echo "::error::Secret DOUYIN_STORAGE_STATE_B64 未配置"
+            exit 1
+          fi
+          echo "$DOUYIN_STORAGE_STATE_B64" | base64 -d > storage_state.json
+          echo "storage_state.json 已生成 ($(wc -c < storage_state.json) bytes)"
+
+      - name: Run Douyin auto-message
+        env:
+          DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+          DOUYIN_FRIEND_NAME: ${{ secrets.DOUYIN_FRIEND_NAME }}
+          DOUYIN_MESSAGE: ${{ secrets.DOUYIN_MESSAGE }}
+          DOUYIN_VIDEO_URL: ${{ secrets.DOUYIN_VIDEO_URL }}
+          NOTIFY_WEBHOOK: ${{ secrets.NOTIFY_WEBHOOK }}
+        run: python -m src.main
+
+      - name: Upload logs & screenshots
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: douyin-run-artifacts
+          path: |
+            logs/
+            screenshots/
+          retention-days: 14
+
+      - name: Notify on failure
+        if: failure()
+        env:
+          NOTIFY_WEBHOOK: ${{ secrets.NOTIFY_WEBHOOK }}
+        run: |
+          python -c "
+          import os
+          from src.notifier import notify_result
+          notify_result(os.getenv('NOTIFY_WEBHOOK',''), False, 'GitHub Actions 运行失败', '请查看 Actions 日志与 artifact 中的截图。')
+          " || true

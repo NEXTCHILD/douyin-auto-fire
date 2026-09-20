@@ -1,0 +1,14 @@
+{
+  "friends": [
+    {
+      "name": "好友昵称",
+      "message": "早上好，给你分享一个视频",
+      "video_url": ""
+    },
+    {
+      "name": "另一个好友",
+      "message": "今天也要开心呀",
+      "video_url": ""
+    }
+  ]
+}
