@@ -46,12 +46,42 @@ jobs:
         env:
           DOUYIN_STORAGE_STATE_B64: ${{ secrets.DOUYIN_STORAGE_STATE_B64 }}
         run: |
-          if [ -z "$DOUYIN_STORAGE_STATE_B64" ]; then
-            echo "::error::Secret DOUYIN_STORAGE_STATE_B64 未配置"
-            exit 1
-          fi
-          echo "$DOUYIN_STORAGE_STATE_B64" | base64 -d > storage_state.json
-          echo "storage_state.json 已生成 ($(wc -c < storage_state.json) bytes)"
+          python - <<'PY'
+          import base64
+          import gzip
+          import os
+          import sys
+
+          b64 = os.getenv("DOUYIN_STORAGE_STATE_B64", "").strip()
+          if not b64:
+              print("::error::Secret DOUYIN_STORAGE_STATE_B64 未配置", file=sys.stderr)
+              sys.exit(1)
+
+          # 1) base64 解码
+          raw = base64.b64decode(b64)
+
+          # 2) 判断 gzip 魔数 0x1f 0x8b：是则解压，否则直接使用（兼容未压缩版本）
+          if raw[:2] == b"\x1f\x8b":
+              print("检测到 gzip 魔数，执行 gzip 解压")
+              content = gzip.decompress(raw)
+          else:
+              print("未检测到 gzip 魔数，按未压缩 JSON 处理")
+              content = raw
+
+          # 3) 校验是否为合法 JSON（UTF-8）
+          try:
+              import json
+              json.loads(content.decode("utf-8"))
+          except Exception as exc:
+              print(f"::error::storage_state 内容不是合法 JSON: {exc}", file=sys.stderr)
+              sys.exit(1)
+
+          # 4) 写入 storage_state.json
+          with open("storage_state.json", "wb") as f:
+              f.write(content)
+
+          print(f"storage_state.json 已生成 ({len(content)} bytes)")
+          PY
 
       - name: Run Douyin auto-message
         env:
