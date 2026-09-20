@@ -86,6 +86,7 @@ jobs:
       - name: Run Douyin auto-message
         env:
           DRY_RUN: ${{ github.event.inputs.dry_run || 'true' }}
+          DOUYIN_FRIENDS_CONFIG: ${{ secrets.DOUYIN_FRIENDS_CONFIG }}
           DOUYIN_FRIEND_NAME: ${{ secrets.DOUYIN_FRIEND_NAME }}
           DOUYIN_MESSAGE: ${{ secrets.DOUYIN_MESSAGE }}
           DOUYIN_VIDEO_URL: ${{ secrets.DOUYIN_VIDEO_URL }}

@@ -39,12 +39,16 @@ def setup_logging() -> logging.Logger:
 def main() -> int:
     logger = setup_logging()
     config = load_config()
+    friends = config.friends
     logger.info("=" * 60)
     logger.info("配置: dry_run=%s headless=%s storage=%s", config.dry_run, config.headless, config.storage_state)
-    logger.info("好友数: %d", len(config.friends))
+    logger.info("好友数: %d", len(friends))
+    for f in friends:
+        tag = "（含视频链接）" if f.video_url else ""
+        logger.info("  - %s%s", f.name, tag)
 
-    if not config.friends:
-        logger.error("未配置任何好友（DOUYIN_FRIEND_NAME 或 config/friends.json），退出")
+    if not friends:
+        logger.error("未配置任何好友（DOUYIN_FRIENDS_CONFIG / DOUYIN_FRIEND_NAME / config/friends.json），退出")
         notify_result(config.notify_webhook, False, "缺少好友配置")
         return 2
 
@@ -72,7 +76,7 @@ def main() -> int:
             )
             return 3
 
-        for idx, friend in enumerate(config.friends):
+        for idx, friend in enumerate(friends):
             if not friend.name:
                 continue
             # 好友之间随机等待 5-15 秒，避免同时发送触发风控
